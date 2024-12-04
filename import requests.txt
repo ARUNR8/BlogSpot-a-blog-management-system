@@ -1,0 +1,55 @@
+import requests
+import re
+
+# Mapping for word to digit
+word_to_digit = {
+    "zero": "0", "one": "1", "two": "2", "three": "3", "four": "4",
+    "five": "5", "six": "6", "seven": "7", "eight": "8", "nine": "9"
+}
+
+def fetch_passage(url):
+    response = requests.get(url)
+    return response.text if response.status_code == 200 else None
+
+def parse_ip_address(passage):
+    # Use regex to find potential IP patterns like 'one nine two point one six eight ...'
+    ip_pattern = r"((?:zero|one|two|three|four|five|six|seven|eight|nine)(?:\s+point\s+(?:zero|one|two|three|four|five|six|seven|eight|nine)){3})"
+    match = re.search(ip_pattern, passage)
+    
+    if match:
+        worded_ip = match.group()
+        ip_parts = worded_ip.split(" point ")
+        # Convert words to digits
+        ip_address = ".".join(word_to_digit[word] for word in ip_parts)
+        return ip_address
+    return None
+
+def submit_answer(submission_url, ip_address):
+    submission_url = submission_url.format(your_answer=ip_address, extension_used="py")
+    response = requests.post(submission_url, data={"answer": ip_address})
+    return response.text
+
+# Main function to execute the solution
+def main():
+    passage_url = "https://quest.squadcast.tech/api/4NN21IS004/worded_ip"
+    submission_url = "https://quest.squadcast.tech/api/4NN21IS004/submit/worded_ip?answer={your_answer}&extension={extension_used}"
+    
+    # Step 1: Fetch passage
+    passage = fetch_passage(passage_url)
+    if not passage:
+        print("Failed to retrieve passage.")
+        return
+    
+    # Step 2: Parse IP address
+    ip_address = parse_ip_address(passage)
+    if not ip_address:
+        print("No valid IP address found.")
+        return
+    
+    # Step 3: Submit the answer
+    result = submit_answer(submission_url, ip_address)
+    print("Submission result:", result)
+
+# Run the main function
+if __name__ == "__main__":
+    main()
